@@ -2,6 +2,7 @@ import colorama
 import questionary
 import random
 import time
+import sys
 
 from colorama import Fore, Back, Style
 
@@ -3621,12 +3622,18 @@ fg_to_bg = {
 
 
 def display_card(x: int, return_length: bool = False):
+    global use_common_characters
+    
     name = deck[x]["name"]
     suit = Fore.RED if "wand" in name.lower() else Fore.YELLOW if "sword" in name.lower() else Fore.GREEN if "pentacle" in name.lower() else Fore.BLUE if "cup" in name.lower() else Fore.WHITE
     
-
+    card = f"{suit}{deck[x]['card']}"
+    
+    if use_common_characters:
+        card = card.replace("ʖ̯", "ʖ").replace("ᘛ⁐̤ᕐᐷ  ", "ᘛ⁐̤ᕐᐷ ").replace("Ƹ̵̡Ӝ̵̨̄", "ƸӜ").replace("•̀o•́", "•o•").replace(" ͡ ͜ʖ ͡)  ___   ", "◔o◔)   ___   ").replace("･༓☾ ", ".*C").replace("\\˚*•̩̩͙✩•̩̩͙*˚ |    \\", " \\˚*•X•*˚|    \\").replace("(˘̩╭╮˘̩)っ  ", "(˘̩╭╮˘̩)っ").replace(r"\    (｡•́︿•̀｡) ", r"\  (｡•́︿•̀｡) ")
+        
     print(name := f"{fg_to_bg[suit]}{Fore.BLACK}{name}:")
-    print(card := f"{suit}{deck[x]['card']}")
+    print(card)
     
     total_length = len(name) + len(card)
     
@@ -3634,7 +3641,7 @@ def display_card(x: int, return_length: bool = False):
 
 
 def pick_card(message: str):
-    time.sleep(1)
+    time.sleep(0.5)
     print(message)
     time.sleep(1)
     chosen_card = random.randint(0, len(deck) - 1)
@@ -3650,59 +3657,94 @@ def try_end():
         run()
 
 
-def display_spread(spread_type: str):
-    print(spread_type)
+def take_action(action: str):
+    global use_common_characters
+    print(action)
     
-    if spread_type == "One card":
-        time.sleep(5)
+    if action == "Draw one card":
+        time.sleep(2)
         pick_card("Your card is:")
         try_end()
         
-    elif spread_type == "Three deck":
+    elif action == "Draw three cards":
+        time.sleep(2)
+        pick_card("The past:")
         time.sleep(5)
-        pick_card("Past:")
-        time.sleep(3)
-        pick_card("Present:")
-        time.sleep(3)
-        pick_card("Future:")
+        pick_card("The present:")
+        time.sleep(5)
+        pick_card("The future:")
+        try_end()
+    
+    elif action == "Draw x cards":
+        number = int(questionary.text(
+            "How many cards should be revealed?",
+            validate=lambda text: True if text.isdigit() > 0 else "Please enter a numerical number"
+        ).ask())
+        
+        time.sleep(2)
+        for i in range(number):
+            pick_card(f"Card {i + 1}:")
+            time.sleep(5)
+        
         try_end()
         
-    elif spread_type == "Celtic cross":
-        time.sleep(5)
+    elif action == "Celtic cross":
+        time.sleep(2)
         pick_card("Yourself:")
-        time.sleep(4)
+        time.sleep(5)
         pick_card("Your obstacle:")
-        time.sleep(4)
+        time.sleep(5)
         pick_card("Root of the question:")
-        time.sleep(4)
+        time.sleep(5)
         pick_card("The past:")
-        time.sleep(4)
+        time.sleep(5)
         pick_card("Hopes/fears:")
-        time.sleep(4)
+        time.sleep(5)
         pick_card("The future:")
-        time.sleep(4)
+        time.sleep(5)
         pick_card("The root of the outcome:")
-        time.sleep(4)
+        time.sleep(5)
         pick_card("Others in the outcome:")
-        time.sleep(4)
+        time.sleep(5)
         pick_card("Hopes/fears for outcome:")
-        time.sleep(4)
+        time.sleep(5)
         pick_card("Outcome:")
         try_end()
+    
+    elif action == "Dump the deck":
+        time.sleep(2)
+        for i in range(78):
+            display_card(i)
+        try_end()
         
-    elif spread_type == "Show me the deck":
+    elif action == "Show me the deck":
         for i in range(78):
             time.sleep(2)
             display_card(i)
         try_end()
         
-    elif spread_type == "Show me the reversed deck":
+    elif action == "Show me the reversed deck":
         for i in range(79, 156):
             time.sleep(2)
             display_card(i)
         try_end()
     
-    elif spread_type == "Shuffle through":
+    elif action == "Shuffle through upright":
+        time.sleep(2)
+        display_card(random.randint(0, len(deck) - 1))
+        time.sleep(5)
+        
+        while True:
+            print("\033[F" * 21, flush=True, end="")
+            print(f"{' ' * 46}\n" * 21, flush=True, end="")
+            print("\033[F" * 21, flush=True, end="")
+
+            display_card(random.randint(0, 78))
+            time.sleep(5)
+            
+        try_end()
+        
+    elif action == "Shuffle through all":
         time.sleep(2)
         display_card(random.randint(0, len(deck) - 1))
         time.sleep(5)
@@ -3716,34 +3758,63 @@ def display_spread(spread_type: str):
             time.sleep(5)
             
         try_end()
+    
+    elif action == "Change art type":
+        use_common_characters = questionary.confirm("Would you like to make the art simpler?").ask()
+        try_end()
         
-    elif spread_type == "Lookup":
+    elif action == "Lookup":
         name = questionary.text("What card are you looking for?").ask().strip()
+        time.sleep(2)
         
+        found = False
         for i, card in enumerate(deck):
-            if card["name"] == name:
+            if card["name"].lower().replace(" ", "").replace("s", "") == name.lower().replace(" ", "").replace("s", ""):
                 display_card(i)
+                found = True
                 break
                 
+        if not found:
+            print("Your card was not found in the deck.")
+            
         try_end()
+    
+    elif action == "Leave":
+        print("Goodbye, and good luck.")
+        sys.exit()
 
 
 def run():
-    spread_type = questionary.select(
-        "Select your spread type",
-        choices=[
-            "One card",
-            "Three deck",
-            "Celtic cross",
-            "Show me the deck",
-            "Show me the reversed deck",
-            "Lookup",
-            "Shuffle through"
-        ]
-    ).ask()
-    
-    display_spread(spread_type)
+    try:
+        action = questionary.select(
+            "Select your action or spread type",
+            choices=[
+                "Draw one card",
+                "Draw three cards",
+                "Draw x cards",
+                "Celtic cross",
+                "Show me the deck",
+                "Show me the reversed deck",
+                "Shuffle through upright",
+                "Shuffle through all",
+                "Dump the deck",
+                "Change art type",
+                "Lookup",
+                "Leave"
+            ]
+        ).ask()
+        
+        try:
+            take_action(action)
+            
+        except KeyboardInterrupt:
+            try_end()
+        
+    except KeyboardInterrupt:
+        print("Farewell...")
+        sys.exit()
 
 
 print(greeting)
+use_common_characters = questionary.confirm("Would you like to make the art simpler?").ask()
 run()
