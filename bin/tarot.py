@@ -3708,9 +3708,9 @@ def display_spread(spread_type: str):
         time.sleep(5)
         
         while True:
-            print("\033[F" * 22, flush=True, end="")
-            print(f"{' ' * 46}\n" * 22, flush=True, end="")
-            print("\033[F" * 22, flush=True, end="")
+            print("\033[F" * 21, flush=True, end="")
+            print(f"{' ' * 46}\n" * 21, flush=True, end="")
+            print("\033[F" * 21, flush=True, end="")
 
             display_card(random.randint(0, len(deck) - 1))
             time.sleep(5)
